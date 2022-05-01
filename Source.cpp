@@ -12,6 +12,8 @@ int n;
 int m;
 vector<vector<char>> boardState;
 
+int moveCount = 0;
+
 struct Move
 {
 	int row;
@@ -733,160 +735,263 @@ vector<Move> generateMoves(int player)
 		return moveList;
 	}
 
-	for (int row = 0; row < n; row++)
+	int i, a = n/2, b = n/2;
+
+	int low_row = (0 > a) ? 0 : a;
+	int low_column = (0 > b) ? 0 : b - 1;
+	int high_row = ((a + 1) >= n) ? n - 1 : a + 1;
+	int high_column = ((b + 1) >= n) ? n - 1 : b + 1;
+
+	while ((low_row > 0 - n && low_column > 0 - n)) 
 	{
-		for (int col = 0; col < n; col++)
+		for (i = low_column + 1; i <= high_column && i < n && low_row >= 0; ++i)
 		{
-			if (boardState[row][col] == '-')
+			if (boardState[low_row][i] == '-')
 			{
 				if (player == 0) //computer
 				{
 					currentMove = boardState;
-					currentMove[row][col] = 'X';
+					currentMove[low_row][i] = 'X';
 					int moveScore = evaluateBoard(currentMove);
-					moveList.push_back(Move(row, col, moveScore));
+					moveList.push_back(Move(low_row, i, moveScore));
 				}
 				else //opponent
 				{
 					currentMove = boardState;
-					currentMove[row][col] = 'O';
+					currentMove[low_row][i] = 'O';
 					int moveScore = evaluateBoard(currentMove);
-					moveList.push_back(Move(row, col, moveScore));
+					moveList.push_back(Move(low_row, i, moveScore));
 				}
 			}
 		}
+		low_row -= 1;
+
+		for (i = low_row + 2; i <= high_row && i < n && high_column < n; ++i)
+		{
+			if (boardState[i][high_column] == '-')
+			{
+				if (player == 0) //computer
+				{
+					currentMove = boardState;
+					currentMove[i][high_column] = 'X';
+					int moveScore = evaluateBoard(currentMove);
+					moveList.push_back(Move(i, high_column, moveScore));
+				}
+				else //opponent
+				{
+					currentMove = boardState;
+					currentMove[i][high_column] = 'O';
+					int moveScore = evaluateBoard(currentMove);
+					moveList.push_back(Move(i, high_column, moveScore));
+				}
+			}
+		}
+		high_column += 1;
+
+		for (i = high_column - 2; i >= low_column && i >= 0 && high_row < n; --i)
+		{
+			if (boardState[high_row][i] == '-')
+			{
+				if (player == 0) //computer
+				{
+					currentMove = boardState;
+					currentMove[high_row][i] = 'X';
+					int moveScore = evaluateBoard(currentMove);
+					moveList.push_back(Move(high_row, i, moveScore));
+				}
+				else //opponent
+				{
+					currentMove = boardState;
+					currentMove[high_row][i] = 'O';
+					int moveScore = evaluateBoard(currentMove);
+					moveList.push_back(Move(high_row, i, moveScore));
+				}
+			}
+		}
+		high_row += 1;
+
+		for (i = high_row - 2; i > low_row && i >= 0 && low_column >= 0; --i)
+		{
+			if (boardState[i][low_column] == '-')
+			{
+				if (player == 0) //computer
+				{
+					currentMove = boardState;
+					currentMove[i][low_column] = 'X';
+					int moveScore = evaluateBoard(currentMove);
+					moveList.push_back(Move(i, low_column, moveScore));
+				}
+				else //opponent
+				{
+					currentMove = boardState;
+					currentMove[i][low_column] = 'O';
+					int moveScore = evaluateBoard(currentMove);
+					moveList.push_back(Move(i, low_column, moveScore));
+				}
+			}
+		}
+		low_column -= 1;
 	}
+
+	//for (int row = 0; row < n; row++)
+	//{
+	//	for (int col = 0; col < n; col++)
+	//	{
+	//		if (boardState[row][col] == '-')
+	//		{
+	//			if (player == 0) //computer
+	//			{
+	//				currentMove = boardState;
+	//				currentMove[row][col] = 'X';
+	//				int moveScore = evaluateBoard(currentMove);
+	//				moveList.push_back(Move(row, col, moveScore));
+	//			}
+	//			else //opponent
+	//			{
+	//				currentMove = boardState;
+	//				currentMove[row][col] = 'O';
+	//				int moveScore = evaluateBoard(currentMove);
+	//				moveList.push_back(Move(row, col, moveScore));
+	//			}
+	//		}
+	//	}
+	//}
+
+	//moveCount += moveList.size();
 
 	return moveList;
 }
 
 Move minmax(int depth, int player, int alpha, int beta)
 {
-	vector<Move> nextMoves = generateMoves(player);
-
 	int score;
 	int bestRow = -1;
 	int bestCol = -1;
 
-	if (nextMoves.empty() || depth == 0)
+	if (depth == 0)
 	{
 		score = evaluateBoard(boardState);
 		return Move(bestRow, bestCol, score);
 	}
-	else
+
+	vector<Move> nextMoves = generateMoves(player);
+
+	if (nextMoves.empty())
 	{
-		for (Move m : nextMoves)
+		score = evaluateBoard(boardState);
+		return Move(bestRow, bestCol, score);
+	}
+	
+	for (Move& m : nextMoves)
+	{
+		//play the move
+		if (player == 0) //computer
 		{
-			//play the move
-			if (player == 0) //computer
-			{
-				boardState[m.row][m.col] = 'X';
-			}
-			else
-			{
-				boardState[m.row][m.col] = 'O';
-			}
+			boardState[m.row][m.col] = 'X';
+		}
+		else
+		{
+			boardState[m.row][m.col] = 'O';
+		}
 
-			if (player == 0) //computer
-			{
-				score = minmax(depth - 1, 1, alpha, beta).score;
+		if (player == 0) //computer
+		{
+			score = minmax(depth - 1, 1, alpha, beta).score;
 
-				if (score > alpha)
-				{
-					alpha = score;
-					bestRow = m.row;
-					bestCol = m.col;
-				}
+			if (score > alpha)
+			{
+				alpha = score;
+				bestRow = m.row;
+				bestCol = m.col;
 			}
-			else
+		}
+		else
+		{
+			score = minmax(depth - 1, 0, alpha, beta).score;
+			if (score < beta)
 			{
-				score = minmax(depth - 1, 0, alpha, beta).score;
-				if (score < beta)
-				{
-					beta = score;
-					bestRow = m.row;
-					bestCol = m.col;
-				}
-			}
-
-			//undo move
-			boardState[m.row][m.col] = '-';
-
-			if (alpha >= beta)
-			{
-				break;
+				beta = score;
+				bestRow = m.row;
+				bestCol = m.col;
 			}
 		}
 
-		return Move(bestRow, bestCol, (player == 0) ? alpha : beta);
+		//undo move
+		boardState[m.row][m.col] = '-';
+
+		if (alpha >= beta)
+		{
+			break;
+		}
+	}
+
+	return Move(bestRow, bestCol, (player == 0) ? alpha : beta);
+}
+
+void updateBoard(string boardString)
+{
+	int row = 0;
+	int col = 0;
+	for (int i = 0; i < boardString.size(); i++)
+	{
+		if (boardString[i]!='\\')
+		{
+			boardState[row][col] = boardString[i];
+			col++;
+		}
+		else
+		{
+			row++;
+			col = 0;
+			i += 1;
+		}
+	}
+}
+
+void makeMove(int player)
+{
+	Move m = minmax(4, player, -100000000, 100000000);
+
+	cout << m.row << "," << m.col << endl;
+
+	if (player == 0)
+	{
+		boardState[m.row][m.col] = 'X';
+	}
+	else
+	{
+		boardState[m.row][m.col] = 'O';
+	}
+}
+
+void printBoard()
+{
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = 0; j < n; j++)
+		{
+			cout << boardState[i][j] << " ";
+		}
+		cout << endl;
 	}
 }
 
 int main()
 {
-	n = 12;
-	m = 6;
+	n = 4;
+	m = 3;
 
 	initializeBoard();
 
-	boardState[3][3] = 'X';
+	string state;
 
-	Move m = minmax(2, 1, -100000, 100000);
-
-	boardState[m.row][m.col] = 'O';
-
-	for (int i = 0; i < n; i++)
+	while (true)
 	{
-		for (int j = 0; j < n; j++)
-		{
-			cout << boardState[i][j] << " ";
-		}
-		cout << endl;
+		cin >> state;
+		updateBoard(state);
+		printBoard();
+		makeMove(1);
+		printBoard();
 	}
-
-	boardState[2][1] = 'X';
-
-	m = minmax(2, 1, -100000, 100000);
-
-	boardState[m.row][m.col] = 'O';
-
-	for (int i = 0; i < n; i++)
-	{
-		for (int j = 0; j < n; j++)
-		{
-			cout << boardState[i][j] << " ";
-		}
-		cout << endl;
-	}
-
-	/*boardState[0][1] = 'X';
-
-	m = minmax(4, 1, -100000, 100000);
-
-	boardState[m.row][m.col] = 'O';
-
-	for (int i = 0; i < n; i++)
-	{
-		for (int j = 0; j < n; j++)
-		{
-			cout << boardState[i][j] << " ";
-		}
-		cout << endl;
-	}
-
-	boardState[1][0] = 'X';
-
-	m = minmax(4, 1, -100000, 100000);
-
-	boardState[m.row][m.col] = 'O';
-
-	for (int i = 0; i < n; i++)
-	{
-		for (int j = 0; j < n; j++)
-		{
-			cout << boardState[i][j] << " ";
-		}
-		cout << endl;
-	}*/
 
 }
